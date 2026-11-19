@@ -1,9 +1,19 @@
+import { urlFor } from "@/lib/origin";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC = ["/login", "/acceso-denegado", "/auth/callback", "/api/cron"];
+const PUBLIC = ["/configuracion", "/login", "/acceso-denegado", "/auth/callback", "/api/cron"];
 
 export async function proxy(request: NextRequest) {
+  // Sin Supabase configurado, mostrar qué variables faltan en vez de fallar.
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || !process.env.ALLOWED_EMAIL) {
+    if (request.nextUrl.pathname.startsWith("/configuracion")) return NextResponse.next();
+    if (request.nextUrl.pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "configuración pendiente" }, { status: 503 });
+    }
+    return NextResponse.redirect(urlFor(request, "/configuracion"));
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -33,12 +43,12 @@ export async function proxy(request: NextRequest) {
   const isApi = path.startsWith("/api/");
   if (!data.user) {
     if (isApi) return NextResponse.json({ error: "no autenticado" }, { status: 401 });
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(urlFor(request, "/login"));
   }
   const allowed = (process.env.ALLOWED_EMAIL || "").trim().toLowerCase();
   if (data.user.email?.toLowerCase() !== allowed) {
     if (isApi) return NextResponse.json({ error: "acceso denegado" }, { status: 403 });
-    return NextResponse.redirect(new URL("/acceso-denegado", request.url));
+    return NextResponse.redirect(urlFor(request, "/acceso-denegado"));
   }
   return response;
 }

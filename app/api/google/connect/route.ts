@@ -1,3 +1,4 @@
+import { urlFor } from "@/lib/origin";
 import { randomBytes } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { getApiUser } from "@/lib/auth";
@@ -5,7 +6,7 @@ import { buildAuthUrl } from "@/lib/google/oauth";
 
 export async function GET(request: NextRequest) {
   const auth = await getApiUser();
-  if (!auth) return NextResponse.redirect(new URL("/login", request.url));
+  if (!auth) return NextResponse.redirect(urlFor(request, "/login"));
   const state = randomBytes(24).toString("base64url");
   const hint = request.nextUrl.searchParams.get("cuenta") ?? undefined;
   const res = NextResponse.redirect(buildAuthUrl(state, hint));

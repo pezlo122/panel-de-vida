@@ -1,3 +1,4 @@
+import { urlFor } from "@/lib/origin";
 import { NextResponse, type NextRequest } from "next/server";
 import { getApiUser } from "@/lib/auth";
 import { encrypt } from "@/lib/crypto";
@@ -5,10 +6,10 @@ import { emailFromIdToken, exchangeCode } from "@/lib/google/oauth";
 
 export async function GET(request: NextRequest) {
   const url = request.nextUrl;
-  const home = (q: string) => NextResponse.redirect(new URL(`/?google=${q}`, request.url));
+  const home = (q: string) => NextResponse.redirect(urlFor(request, `/?google=${q}`));
 
   const auth = await getApiUser();
-  if (!auth) return NextResponse.redirect(new URL("/login", request.url));
+  if (!auth) return NextResponse.redirect(urlFor(request, "/login"));
 
   const state = url.searchParams.get("state");
   if (!state || state !== request.cookies.get("g_oauth_state")?.value) return home("estado_invalido");
